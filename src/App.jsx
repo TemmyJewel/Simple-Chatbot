@@ -2,16 +2,16 @@
 import './App.css'
 import user from "./assets/user.png";
 import robot from "./assets/robot.png";
-import { useState, useEffect}  from 'react';
+import {useEffect, useState, useRef}  from 'react';
 
-function ChatInput({chatMessages, setChatMessages}){
+function ChatInput({chatMessages, setChatMessages, setLoading, loading, pendingMessage, setPendingMessage}){
   const [inputText, setInputText] = useState('');
   
   function saveInputText(e){
     setInputText(e.target.value);
   }
 
-  function sendMessage(){
+  async function sendMessage(){
     const newChatMessages = [
       ...chatMessages,
       {
@@ -20,9 +20,15 @@ function ChatInput({chatMessages, setChatMessages}){
         id: crypto.randomUUID()
       }
     ]
-    setChatMessages(newChatMessages);
 
-    const response = window.Chatbot.getResponse(inputText);
+    setLoading(true);
+    setChatMessages(newChatMessages);
+   
+    setPendingMessage({message: "Loading...", sender: "robot"})
+
+    const response = await window.Chatbot.getResponseAsync(inputText);
+   
+    setPendingMessage(null)
     setChatMessages([
       ...newChatMessages,
       {
@@ -32,19 +38,39 @@ function ChatInput({chatMessages, setChatMessages}){
       }
     ]);
     
-    setInputText("")
+    setInputText("");
+    setLoading(false);
   }
+
+  
+  function keyDownEvent(e){
+    if(e.key === "Enter"){
+      sendMessage();
+      setInputText("")
+    }
+    if(e.key === "Escape"){
+      setInputText("")
+    }
+  }
+  
+ 
   return (
-    <>
+    <div className='chat-input-container'>
       <input 
+        disabled={loading}
+        className='input-box'
         placeholder='Send a message to Chatbot' 
         size="30"
         onChange={saveInputText}
         value={inputText}
+        onKeyDown={keyDownEvent}
       />
       
-      <button onClick={sendMessage}>Send</button>
-    </>
+      <button 
+        onClick={sendMessage} 
+        className='send-btn'
+      >Send</button>
+    </div>
     
   )
 }
@@ -65,15 +91,21 @@ function ChatMessage({message, sender}){
   }*/
   
   return (
-    <div>
+    <div className={
+        sender === 'user' 
+          ? 'chat-message-user' 
+          : 'chat-message-robot'
+      }>
       {sender === 'robot' && (
-        <img src={robot} width="50"/>
+        <img src={robot} className='chat-message-profile'/>
       )}
       
-      {message} 
-      
+      <div className='chat-message-text'>
+      {message}
+      </div>
+
       {sender === 'user' && (
-        <img src={user} width="50"/>
+        <img src={user} className='chat-message-profile'/>
       )} 
       
     </div>
@@ -81,9 +113,20 @@ function ChatMessage({message, sender}){
   )
 }
 
-function ChatMessages({chatMessages}){
+function ChatMessages({chatMessages, pendingMessage}){
+  const chatMessagesRef = useRef(null);
+  useEffect(() => {
+    const containerElem = chatMessagesRef.current;
+    if (containerElem){
+      containerElem.scrollTop = containerElem.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  
   return(
-  <>
+  <div 
+    className='chat-message-container'
+    ref={chatMessagesRef}>
     {chatMessages.map((chatMessage) => {
           return (
             <ChatMessage
@@ -93,7 +136,11 @@ function ChatMessages({chatMessages}){
             />
           )
     })}
-  </>
+    {pendingMessage && (
+      <ChatMessage 
+        sender="robot" message={pendingMessage.message}/>
+    )}
+  </div>
   )
 }
 
@@ -120,16 +167,24 @@ function App() {
     }
   ]);
 
+  const [loading, setLoading] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('')
+
   return (
-    <>
+    <div className='App-container'>
+      <ChatMessages 
+        chatMessages = {chatMessages}
+        pendingMessage={pendingMessage}
+      />
       <ChatInput 
         chatMessages = {chatMessages}
         setChatMessages = {setChatMessages}
+        loading = {loading}
+        setLoading = {setLoading}
+        pendingMessage = {pendingMessage}
+        setPendingMessage = {setPendingMessage}
       />
-      <ChatMessages 
-        chatMessages = {chatMessages}
-      />
-    </>
+    </div>
   )
 }
 
