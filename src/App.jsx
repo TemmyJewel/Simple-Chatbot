@@ -2,9 +2,22 @@
 import './App.css'
 import user from "./assets/user.png";
 import robot from "./assets/robot.png";
+import spinner from "./assets/loading-spinner.gif";
 import {useEffect, useState, useRef}  from 'react';
 
-function ChatInput({chatMessages, setChatMessages, setLoading, loading, pendingMessage, setPendingMessage}){
+function useAutoScroll(dependency){
+  const dependencyRef = useRef(null);
+  useEffect(() => {
+    const containerElem = dependencyRef.current;
+    if (containerElem){
+      containerElem.scrollTop = containerElem.scrollHeight;
+    }
+  }, [dependency]);
+
+  return dependencyRef;
+}
+
+function ChatInput({chatMessages, setChatMessages, setLoading, loading, setPendingMessage}){
   const [inputText, setInputText] = useState('');
   
   function saveInputText(e){
@@ -24,7 +37,7 @@ function ChatInput({chatMessages, setChatMessages, setLoading, loading, pendingM
     setLoading(true);
     setChatMessages(newChatMessages);
    
-    setPendingMessage({message: "Loading...", sender: "robot"})
+    setPendingMessage({message: <img src= {spinner} className='spinner'/>, sender: "robot"})
 
     const response = await window.Chatbot.getResponseAsync(inputText);
    
@@ -68,6 +81,7 @@ function ChatInput({chatMessages, setChatMessages, setLoading, loading, pendingM
       
       <button 
         onClick={sendMessage} 
+        disabled={loading}
         className='send-btn'
       >Send</button>
     </div>
@@ -114,19 +128,16 @@ function ChatMessage({message, sender}){
 }
 
 function ChatMessages({chatMessages, pendingMessage}){
-  const chatMessagesRef = useRef(null);
-  useEffect(() => {
-    const containerElem = chatMessagesRef.current;
-    if (containerElem){
-      containerElem.scrollTop = containerElem.scrollHeight;
-    }
-  }, [chatMessages]);
-
-  
+  const chatMessagesRef = useAutoScroll(chatMessages);
   return(
   <div 
     className='chat-message-container'
     ref={chatMessagesRef}>
+    {chatMessages.length === 0 && (
+      <h2 className="welcome-message">
+        Welcome to the chatbot project! Send a message using the textbox below.
+      </h2>
+    )}
     {chatMessages.map((chatMessage) => {
           return (
             <ChatMessage
@@ -145,27 +156,7 @@ function ChatMessages({chatMessages, pendingMessage}){
 }
 
 function App() {
-  const [chatMessages, setChatMessages] = useState([{
-    message: "Hello Chatbot",
-    sender:"user",
-    id: "id1"
-    },
-    {
-      message:"Hello! How can I help you today?",
-      sender: "robot",
-      id: "id2"
-    },
-    {
-      message:"Can you get me today's date?",
-      sender:"user",
-      id: "id3"
-    },
-    {
-      message:"Today is Friday the 13th",
-      sender:"robot",
-      id: "id4"
-    }
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [pendingMessage, setPendingMessage] = useState('')
@@ -181,7 +172,6 @@ function App() {
         setChatMessages = {setChatMessages}
         loading = {loading}
         setLoading = {setLoading}
-        pendingMessage = {pendingMessage}
         setPendingMessage = {setPendingMessage}
       />
     </div>

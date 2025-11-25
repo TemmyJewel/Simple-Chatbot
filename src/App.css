@@ -84,3 +84,14 @@ body{
 .chat-message-profile{
     width: 50px;
 }
+
+.welcome-message{
+    text-align: center;
+    color: gray;
+    margin-top: 50%;
+}
+
+.spinner{
+    margin: -15px;
+    height: 40px;
+}
