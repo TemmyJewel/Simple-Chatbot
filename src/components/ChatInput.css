@@ -24,6 +24,10 @@
     cursor: pointer;
 }
 
+.clear-btn{
+    background-color: rgb(138, 133, 133);
+}
+
 .spinner{
     margin: -15px;
     height: 40px;
